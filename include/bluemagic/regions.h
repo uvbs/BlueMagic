@@ -5,7 +5,7 @@
 
 #include "process.h"
 #include "process_module.h"
-#include "winapi.h"
+#include "winapi_impl.h"
 
 namespace bluemagic
 {
@@ -22,7 +22,7 @@ static std::vector<MEMORY_BASIC_INFORMATION> ScanMemoryRegions(HANDLE processHan
 
         do
         {
-            MEMORY_BASIC_INFORMATION region = winapi::VirtualQueryEx(processHandle, seek, sizeof(MEMORY_BASIC_INFORMATION));
+            MEMORY_BASIC_INFORMATION region = VirtualQueryExImpl(processHandle, seek, sizeof(MEMORY_BASIC_INFORMATION));
             if ((region.State & MEM_COMMIT) && !(region.Protect & 0x701))
                 regions.push_back(region);
 

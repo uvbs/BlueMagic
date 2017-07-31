@@ -4,7 +4,7 @@
 #include <tlhelp32.h>
 #include <vector>
 
-#include "winapi.h"
+#include "winapi_impl.h"
 #include "process_module.h"
 
 namespace bluemagic
@@ -18,10 +18,10 @@ class Process
         Process(PROCESSENTRY32 processEntry)
         {
             Id = processEntry.th32ProcessID;
-            Handle = winapi::OpenProcess(Id);
-            Is64 = winapi::IsWow64Process(Handle);
+            Handle = OpenProcessImpl(Id);
+            Is64 = IsWow64ProcessImpl(Handle);
 
-            std::vector<MODULEENTRY32> moduleEntries = winapi::GetModulesFromProcess(Id);
+            std::vector<MODULEENTRY32> moduleEntries = GetModulesFromProcessImpl(Id);
             for (MODULEENTRY32 me32 : moduleEntries)
             {
                 ProcessModule m = ProcessModule(me32);
@@ -30,7 +30,7 @@ class Process
                 Modules.push_back(m);
             }
 
-            Name = winapi::GetProcessModuleBaseName(Handle, MainModule.Handle);
+            Name = GetProcessModuleBaseNameImpl(Handle, MainModule.Handle);
         }
 
         ~Process()

@@ -2,7 +2,7 @@
 
 #include <windows.h>
 
-#include "winapi.h"
+#include "winapi_impl.h"
 
 namespace bluemagic
 {
@@ -16,7 +16,7 @@ class ProtectOperation
             Address = address;
             Size = size;
             NewProtection = protection;
-            OldProtection = winapi::VirtualProtectEx(ProcessHandle, Address, Size, NewProtection);
+            OldProtection = VirtualProtectExImpl(ProcessHandle, Address, Size, NewProtection);
         }
 
         ProtectOperation(HANDLE processHandle, UINT_PTR address, SIZE_T size, DWORD protection = PAGE_EXECUTE_READWRITE)
@@ -25,7 +25,7 @@ class ProtectOperation
             Address = address;
             Size = size;
             NewProtection = protection;
-            OldProtection = winapi::VirtualProtectEx(ProcessHandle, Address, Size, NewProtection);
+            OldProtection = VirtualProtectExImpl(ProcessHandle, Address, Size, NewProtection);
         }
 
         ~ProtectOperation()
@@ -36,9 +36,9 @@ class ProtectOperation
         void Restore()
         {
             if (ProcessHandle)
-                winapi::VirtualProtectEx(ProcessHandle, Address, Size, OldProtection);
+                VirtualProtectExImpl(ProcessHandle, Address, Size, OldProtection);
             else
-                winapi::VirtualProtect(Address, Size, OldProtection);
+                VirtualProtectImpl(Address, Size, OldProtection);
         }
 
     private:

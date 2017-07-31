@@ -11,14 +11,14 @@
 #include <bluemagic\signature.h>
 #include <bluemagic\string.h>
 #include <bluemagic\type_converter.h>
-#include <bluemagic\winapi.h>
+#include <bluemagic\winapi_impl.h>
 
 using namespace bluemagic;
 
 int main()
 {
     Process* p = nullptr;
-    std::vector<PROCESSENTRY32> ps32 = winapi::GetProcesses();
+    std::vector<PROCESSENTRY32> ps32 = GetProcessesImpl();
     for (PROCESSENTRY32 p32 : ps32)
         if (strcmp(p32.szExeFile, L"", true))
         {

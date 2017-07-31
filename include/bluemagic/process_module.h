@@ -4,7 +4,7 @@
 #include <tlhelp32.h>
 
 #include "type_converter.h"
-#include "winapi.h"
+#include "winapi_impl.h"
 
 namespace bluemagic
 {

@@ -29,7 +29,7 @@
     <ClInclude Include="..\include\bluemagic\signature.h" />
     <ClInclude Include="..\include\bluemagic\string.h" />
     <ClInclude Include="..\include\bluemagic\type_converter.h" />
-    <ClInclude Include="..\include\bluemagic\winapi.h" />
+    <ClInclude Include="..\include\bluemagic\winapi_impl.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
