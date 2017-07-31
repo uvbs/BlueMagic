@@ -64,7 +64,7 @@ static std::vector<UINT_PTR> ScanBufferForSignature(std::vector<BYTE> buffer, Si
 
     for (i = 0; x > signatureStringSize && i < signatureStringSize; i += 2)
     {
-        if (strcmp(s.substr(i, 2).c_str(), "??") != 0)
+        if (strcmpA(s.substr(i, 2).c_str(), "??"))
             x = i / 2;
     }
 
@@ -238,7 +238,7 @@ static UINT_PTR ScanAddressForSignature(HANDLE processHandle, UINT_PTR address, 
 
     for (i = 0; j > signatureStringSize && i < signatureStringSize; i += 2)
     {
-        if (strcmp(s.substr(i, 2).c_str(), "??") != 0)
+        if (strcmpA(s.substr(i, 2).c_str(), "??"))
             j = i / 2;
     }
 

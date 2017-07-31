@@ -25,7 +25,7 @@ class Process
             for (MODULEENTRY32 me32 : moduleEntries)
             {
                 ProcessModule m = ProcessModule(me32);
-                if (lstrcmp(me32.szModule, processEntry.szExeFile) == 0)
+                if (strcmp(me32.szModule, processEntry.szExeFile, true))
                     MainModule = m;
                 Modules.push_back(m);
             }

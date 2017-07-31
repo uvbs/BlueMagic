@@ -20,7 +20,7 @@ int main()
     Process* p = nullptr;
     std::vector<PROCESSENTRY32> ps32 = winapi::GetProcesses();
     for (PROCESSENTRY32 p32 : ps32)
-        if (lstrcmp(p32.szExeFile, L"") == 0)
+        if (strcmp(p32.szExeFile, L"", true))
         {
             p = new Process(p32);
             break;
