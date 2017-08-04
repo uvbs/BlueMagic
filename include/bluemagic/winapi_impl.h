@@ -36,17 +36,6 @@ static inline DWORD GetProcessIdImpl(HANDLE processHandle)
     return processId;
 }
 
-static inline BOOL IsWow64ProcessImpl(HANDLE processHandle)
-{
-    BOOL is64 = FALSE;
-    BOOL success = ::IsWow64Process(processHandle, &is64);
-    if (!success)
-        throw std::exception(strfA("%s(0x%0x) failed Win32Error:%u",
-            __func__, PointerToGeneric<UINT_PTR>(processHandle), ::GetLastError()).c_str());
-
-    return is64 != FALSE;
-}
-
 static inline TSTR GetWindowClassNameImpl(HWND windowHandle)
 {
     TCHAR className[MAX_CLASS_NAME];
