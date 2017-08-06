@@ -4,51 +4,57 @@
 #include <tlhelp32.h>
 #include <vector>
 
-#include "winapi_impl.h"
 #include "process_module.h"
+#include "string.h"
+#include "winapi_impl.h"
 
 namespace bluemagic
 {
 
 class Process
 {
-    public:
-        Process() { }
+public:
+    Process() { }
 
-        Process(PROCESSENTRY32 processEntry)
+    Process(PROCESSENTRY32 processEntry)
+    {
+        Id = processEntry.th32ProcessID;
+        Handle = OpenProcessImpl(Id);
+        Is64 = false;
+
+        std::vector<MODULEENTRY32> moduleEntries = GetModulesFromProcessImpl(Id);
+        for (MODULEENTRY32 me32 : moduleEntries)
         {
-            Id = processEntry.th32ProcessID;
-            Handle = OpenProcessImpl(Id);
-            Is64 = IsWow64ProcessImpl(Handle);
+            ProcessModule m = ProcessModule(me32);
 
-            std::vector<MODULEENTRY32> moduleEntries = GetModulesFromProcessImpl(Id);
-            for (MODULEENTRY32 me32 : moduleEntries)
-            {
-                ProcessModule m = ProcessModule(me32);
-                if (strcmp(me32.szModule, processEntry.szExeFile, true))
-                    MainModule = m;
-                Modules.push_back(m);
-            }
+            if (strcmp(me32.szModule, processEntry.szExeFile, true))
+                MainModule = m;
 
-            Name = GetProcessModuleBaseNameImpl(Handle, MainModule.Handle);
+            Modules.push_back(m);
+
+            if (m.BaseAddress >= 0x100000000)
+                Is64 = true;
         }
 
-        ~Process()
-        {
-            CloseHandle(Handle);
-        }
+        Name = GetProcessModuleBaseNameImpl(Handle, MainModule.Handle);
+    }
 
-        bool operator==(const Process& rhs) const
-        {
-            return this->Id == rhs.Id && this->Handle == rhs.Handle;
-        }
+    ~Process()
+    {
+        CloseHandle(Handle);
+    }
 
-        TSTR Name;
-        DWORD Id;
-        HANDLE Handle;
-        bool Is64;
-        ProcessModule MainModule;
-        std::vector<ProcessModule> Modules;
+    bool operator==(const Process& rhs) const
+    {
+        return this->Id == rhs.Id && this->Handle == rhs.Handle;
+    }
+
+    TSTR Name;
+    DWORD Id;
+    HANDLE Handle;
+    bool Is64;
+    ProcessModule MainModule;
+    std::vector<ProcessModule> Modules;
 };
 
 }

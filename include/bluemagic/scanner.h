@@ -98,7 +98,7 @@ static std::vector<UINT_PTR> ScanBufferForSignature(std::vector<BYTE> buffer, Si
 static std::vector<UINT_PTR> ScanMemoryRegionForBytes(HANDLE processHandle, MEMORY_BASIC_INFORMATION region, std::vector<BYTE> bytes)
 {
     std::vector<UINT_PTR> results;
-    std::vector<UINT_PTR> addresses = ScanBufferForBytes(ReadMemory(processHandle, PointerToGeneric<UINT_PTR>(region.BaseAddress), region.RegionSize), bytes);
+    std::vector<UINT_PTR> addresses = ScanBufferForBytes(Read(processHandle, PointerToGeneric<UINT_PTR>(region.BaseAddress), region.RegionSize), bytes);
     for (UINT_PTR address : addresses)
         results.push_back(PointerToGeneric<UINT_PTR>(region.BaseAddress) + address);
 
@@ -119,7 +119,7 @@ static std::vector<UINT_PTR> ScanMemoryRegionForGeneric(HANDLE processHandle, ME
 static std::vector<UINT_PTR> ScanMemoryRegionForSignature(HANDLE processHandle, MEMORY_BASIC_INFORMATION region, Signature signature)
 {
     std::vector<UINT_PTR> results;
-    std::vector<UINT_PTR> addresses = ScanBufferForSignature(ReadMemory(processHandle, PointerToGeneric<UINT_PTR>(region.BaseAddress), region.RegionSize), signature);
+    std::vector<UINT_PTR> addresses = ScanBufferForSignature(Read(processHandle, PointerToGeneric<UINT_PTR>(region.BaseAddress), region.RegionSize), signature);
     for (UINT_PTR address : addresses)
         results.push_back(PointerToGeneric<UINT_PTR>(region.BaseAddress) + address);
 
@@ -212,7 +212,7 @@ static std::vector<UINT_PTR> ScanAllProcessModulesForSignature(Process* process,
 
 static UINT_PTR ScanAddressForBytes(HANDLE processHandle, UINT_PTR address, std::vector<BYTE> bytes)
 {
-    if (ReadMemory(processHandle, address, bytes.size()) == bytes)
+    if (Read(processHandle, address, bytes.size()) == bytes)
         return address;
 
     return 0;
@@ -231,7 +231,7 @@ static UINT_PTR ScanAddressForSignature(HANDLE processHandle, UINT_PTR address, 
 
     SIZE_T signatureStringSize = signature.StringSize;
     SIZE_T signatureBytesSize = signatureStringSize / 2;
-    std::vector<BYTE> buffer = ReadMemory(processHandle, address, signatureBytesSize);
+    std::vector<BYTE> buffer = Read(processHandle, address, signatureBytesSize);
     std::string s = signature.String;
     SIZE_T i, j = signatureStringSize + 1;
     CHAR b[4];

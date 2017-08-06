@@ -17,14 +17,25 @@ using namespace bluemagic;
 
 int main()
 {
-    Process* p = nullptr;
-    std::vector<PROCESSENTRY32> ps32 = GetProcessesImpl();
-    for (PROCESSENTRY32 p32 : ps32)
-        if (strcmp(p32.szExeFile, L"", true))
+    try
+    {
+        Process* p = nullptr;
+        HANDLE ph = nullptr;
+        std::vector<PROCESSENTRY32> ps32 = GetProcessesImpl();
+        for (PROCESSENTRY32 p32 : ps32)
         {
-            p = new Process(p32);
-            break;
+            if (strcmp(p32.szExeFile, L"", true))
+            {
+                p = new Process(p32);
+                ph = p->Handle;
+                break;
+            }
         }
+    }
+    catch (std::exception ex)
+    {
+        printf("%s\n", ex.what());
+    }
 
     _getch();
     return 0;
