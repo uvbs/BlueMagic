@@ -7,7 +7,7 @@
 #include "readwrite.h"
 #include "regions.h"
 #include "process.h"
-#include "process_module.h"
+#include "module.h"
 #include "signature.h"
 
 namespace bluemagic
@@ -163,48 +163,48 @@ static std::vector<UINT_PTR> ScanAllMemoryRegionsForSignature(HANDLE processHand
     return results;
 }
 
-static std::vector<UINT_PTR> ScanProcessModuleForBytes(Process* process, HANDLE processHandle, ProcessModule module, std::vector<BYTE> bytes)
+static std::vector<UINT_PTR> ScanModuleForBytes(Process* process, HANDLE processHandle, Module module, std::vector<BYTE> bytes)
 {
     return ScanAllMemoryRegionsForBytes(processHandle, LoadMemoryRegions(process, module), bytes);
 }
 
 template <class T, typename = std::enable_if_t<std::is_trivially_copyable_v<T>>>
-static std::vector<UINT_PTR> ScanProcessModuleForGeneric(Process process, HANDLE processHandle, ProcessModule module, T value)
+static std::vector<UINT_PTR> ScanModuleForGeneric(Process process, HANDLE processHandle, Module module, T value)
 {
     return ScanAllMemoryRegionsForGeneric(processHandle, Load(process, module), value);
 }
 
-static std::vector<UINT_PTR> ScanProcessModuleForSignature(Process* process, HANDLE processHandle, ProcessModule module, Signature signature)
+static std::vector<UINT_PTR> ScanModuleForSignature(Process* process, HANDLE processHandle, Module module, Signature signature)
 {
     return ScanAllMemoryRegionsForSignature(processHandle, LoadMemoryRegions(process, module), signature);
 }
 
-static std::vector<UINT_PTR> ScanAllProcessModulesForBytes(Process* process, HANDLE processHandle, std::vector<BYTE> bytes)
+static std::vector<UINT_PTR> ScanAllModulesForBytes(Process* process, HANDLE processHandle, std::vector<BYTE> bytes)
 {
     std::vector<UINT_PTR> results;
-    for (ProcessModule pm : process->Modules)
-        for (UINT_PTR address : ScanProcessModuleForBytes(process, processHandle, pm, bytes))
+    for (Module pm : process->Modules)
+        for (UINT_PTR address : ScanModuleForBytes(process, processHandle, pm, bytes))
             results.push_back(address);
 
     return results;
 }
 
 template <class T, typename = std::enable_if_t<std::is_trivially_copyable_v<T>>>
-static std::vector<UINT_PTR> ScanAllProcessModulesForGeneric(Process* process, HANDLE processHandle, T value)
+static std::vector<UINT_PTR> ScanAllModulesForGeneric(Process* process, HANDLE processHandle, T value)
 {
     std::vector<UINT_PTR> results;
-    for (ProcessModule pm : process->Modules)
-        for (UINT_PTR address : ScanProcessModuleForGeneric(process, processHandle, pm, value))
+    for (Module pm : process->Modules)
+        for (UINT_PTR address : ScanModuleForGeneric(process, processHandle, pm, value))
             results.push_back(address);
 
     return results;
 }
 
-static std::vector<UINT_PTR> ScanAllProcessModulesForSignature(Process* process, HANDLE processHandle, Signature signature)
+static std::vector<UINT_PTR> ScanAllModulesForSignature(Process* process, HANDLE processHandle, Signature signature)
 {
     std::vector<UINT_PTR> results;
-    for (ProcessModule pm : process->Modules)
-        for (UINT_PTR address : ScanProcessModuleForSignature(process, processHandle, pm, signature))
+    for (Module pm : process->Modules)
+        for (UINT_PTR address : ScanModuleForSignature(process, processHandle, pm, signature))
             results.push_back(address);
 
     return results;

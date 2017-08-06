@@ -4,7 +4,7 @@
 #include <tlhelp32.h>
 #include <vector>
 
-#include "process_module.h"
+#include "module.h"
 #include "string.h"
 #include "winapi_impl.h"
 
@@ -25,7 +25,7 @@ public:
         std::vector<MODULEENTRY32> moduleEntries = GetModulesFromProcessImpl(Id);
         for (MODULEENTRY32 me32 : moduleEntries)
         {
-            ProcessModule m = ProcessModule(me32);
+            Module m = Module(me32);
 
             if (strcmp(me32.szModule, processEntry.szExeFile, true))
                 MainModule = m;
@@ -36,7 +36,7 @@ public:
                 Is64 = true;
         }
 
-        Name = GetProcessModuleBaseNameImpl(Handle, MainModule.Handle);
+        Name = GetModuleBaseNameImpl(Handle, MainModule.Handle);
     }
 
     ~Process()
@@ -44,17 +44,22 @@ public:
         CloseHandle(Handle);
     }
 
-    bool operator==(const Process& rhs) const
-    {
-        return this->Id == rhs.Id && this->Handle == rhs.Handle;
-    }
-
     TSTR Name;
     DWORD Id;
     HANDLE Handle;
     bool Is64;
-    ProcessModule MainModule;
-    std::vector<ProcessModule> Modules;
+    Module MainModule;
+    std::vector<Module> Modules;
 };
+
+inline bool operator==(const Process& lhs, const Process& rhs)
+{
+    return lhs.Modules == rhs.Modules;
+}
+
+inline bool operator!=(const Process& lhs, const Process& rhs)
+{
+    return !(lhs == rhs);
+}
 
 }

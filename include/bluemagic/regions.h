@@ -4,13 +4,13 @@
 #include <vector>
 
 #include "process.h"
-#include "process_module.h"
+#include "module.h"
 #include "winapi_impl.h"
 
 namespace bluemagic
 {
 
-static std::vector<MEMORY_BASIC_INFORMATION> ScanMemoryRegions(HANDLE processHandle, std::vector<ProcessModule> processModules, SIZE_T moduleIndex, SIZE_T endModule)
+static std::vector<MEMORY_BASIC_INFORMATION> ScanMemoryRegions(HANDLE processHandle, std::vector<Module> processModules, SIZE_T moduleIndex, SIZE_T endModule)
 {
     std::vector<MEMORY_BASIC_INFORMATION> regions;
 
@@ -33,15 +33,15 @@ static std::vector<MEMORY_BASIC_INFORMATION> ScanMemoryRegions(HANDLE processHan
     return regions;
 }
 
-static std::vector<MEMORY_BASIC_INFORMATION> ScanAllMemoryRegions(HANDLE processHandle, std::vector<ProcessModule> processModules)
+static std::vector<MEMORY_BASIC_INFORMATION> ScanAllMemoryRegions(HANDLE processHandle, std::vector<Module> processModules)
 {
     return ScanMemoryRegions(processHandle, processModules, 0, processModules.size());
 }
 
-static std::vector<MEMORY_BASIC_INFORMATION> LoadMemoryRegions(Process* process, ProcessModule processModule)
+static std::vector<MEMORY_BASIC_INFORMATION> LoadMemoryRegions(Process* process, Module processModule)
 {
-    std::vector<ProcessModule> processModules = process->Modules;
-    std::vector<ProcessModule>::iterator itr = std::find(processModules.begin(), processModules.end(), processModule);
+    std::vector<Module> processModules = process->Modules;
+    std::vector<Module>::iterator itr = std::find(processModules.begin(), processModules.end(), processModule);
     if (itr == processModules.end())
         return std::vector<MEMORY_BASIC_INFORMATION>();
 

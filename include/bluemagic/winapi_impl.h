@@ -174,7 +174,7 @@ static inline MEMORY_BASIC_INFORMATION VirtualQueryExImpl(HANDLE processHandle, 
 
 #pragma region psapi.h
 
-static inline TSTR GetProcessModuleBaseNameImpl(HANDLE processHandle, HMODULE moduleHandle)
+static inline TSTR GetModuleBaseNameImpl(HANDLE processHandle, HMODULE moduleHandle)
 {
     TCHAR baseName[MAX_MODULE_NAME32];
     DWORD baseNameSize = ::GetModuleBaseName(processHandle, moduleHandle, &baseName[0], MAX_MODULE_NAME32);

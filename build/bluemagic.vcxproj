@@ -25,7 +25,7 @@
     <ClInclude Include="..\include\bluemagic\scanner.h" />
     <ClInclude Include="..\include\bluemagic\pointer.h" />
     <ClInclude Include="..\include\bluemagic\process.h" />
-    <ClInclude Include="..\include\bluemagic\process_module.h" />
+    <ClInclude Include="..\include\bluemagic\module.h" />
     <ClInclude Include="..\include\bluemagic\signature.h" />
     <ClInclude Include="..\include\bluemagic\string.h" />
     <ClInclude Include="..\include\bluemagic\type_converter.h" />

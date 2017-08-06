@@ -2,7 +2,7 @@
 #include <conio.h>
 
 #include <bluemagic\pointer.h>
-#include <bluemagic\process_module.h>
+#include <bluemagic\module.h>
 #include <bluemagic\process.h>
 #include <bluemagic\protect_operation.h>
 #include <bluemagic\readwrite.h>
