@@ -11,48 +11,34 @@ namespace bluemagic
 class Pointer
 {
 public:
-    HANDLE ProcessHandle;
-    std::vector<std::pair<UINT_PTR, UINT_PTR>> Levels;
-    SIZE_T LevelsCount;
-
-    Pointer() { }
-
-    Pointer(HANDLE processHandle, UINT_PTR baseAddress, UINT_PTR baseOffset, std::vector<UINT_PTR> offsets)
+    Pointer(HANDLE processHandle, UINT_PTR baseAddress, UINT_PTR baseOffset, std::vector<UINT_PTR> offsets) :
+        _process_handle{ processHandle }, _levels{ std::vector<std::pair<UINT_PTR, UINT_PTR>>(offsets.size() + 1) }
     {
-        ProcessHandle = processHandle;
-        LevelsCount = offsets.size() + 1;
-        Levels.resize(LevelsCount);
-        Levels[0] = std::make_pair(baseAddress, baseOffset);
-        for (SIZE_T i = 1; i < LevelsCount; ++i)
-            Levels[i] = std::make_pair(0, offsets[i - 1]);
-    }
-
-    UINT_PTR GetAddress() const
-    {
-        const std::pair<UINT_PTR, UINT_PTR>& l = Levels[LevelsCount - 1];
-        return l.first + l.second;
+        _levels[0] = std::make_pair(baseAddress, baseOffset);
+        for (SIZE_T i = 1; i < _levels.size(); ++i)
+            _levels[i] = std::make_pair(0, offsets[i - 1]);
     }
 
     void Resolve(SIZE_T index = 0)
     {
-        for (; index < LevelsCount - 1; ++index)
-            Levels[index + 1].first = bluemagic::Read<UINT_PTR>(ProcessHandle, GetAddress());
+        for (; index < _levels.size() - 1; ++index)
+            _levels[index + 1].first = bluemagic::Read<UINT_PTR>(_process_handle, GetAddress());
     }
 
     std::vector<BYTE> Read(SIZE_T size) const
     {
-        return bluemagic::Read(ProcessHandle, GetAddress(), size);
+        return bluemagic::Read(_process_handle, GetAddress(), size);
     }
 
     template <typename T, typename = std::enable_if_t<std::is_trivially_copyable_v<T>>>
     T Read() const
     {
-        return bluemagic::Read<T>(ProcessHandle, GetAddress());
+        return bluemagic::Read<T>(_process_handle, GetAddress());
     }
 
     bool Write(std::vector<BYTE> bytes) const
     {
-        return bluemagic::Write(ProcessHandle, GetAddress(), bytes);
+        return bluemagic::Write(_process_handle, GetAddress(), bytes);
     }
 
     template <typename T, typename = std::enable_if_t<std::is_trivially_copyable_v<T>>>
@@ -60,23 +46,44 @@ public:
     {
         return bluemagic::Write(ProcessHandle, GetAddress(), value);
     }
+
+    UINT_PTR GetAddress() const
+    {
+        return _levels[_levels.size() - 1].first + _levels[_levels.size() - 1].second;
+    }
+
+    HANDLE GetProcessHandle() const
+    {
+        return _process_handle;
+    }
+
+    std::vector<std::pair<UINT_PTR, UINT_PTR>> GetLevels() const
+    {
+        return _levels;
+    }
+
+private:
+    HANDLE _process_handle;
+    std::vector<std::pair<UINT_PTR, UINT_PTR>> _levels;
 };
 
 inline bool operator==(const Pointer& lhs, const Pointer& rhs)
 {
-    if (lhs.ProcessHandle != rhs.ProcessHandle || lhs.LevelsCount != rhs.LevelsCount)
+    std::vector<std::pair<UINT_PTR, UINT_PTR>> lhslevels = lhs.GetLevels(), rhslevels = rhs.GetLevels();
+
+    if (lhs.GetProcessHandle() != rhs.GetProcessHandle() || lhslevels.size() != rhslevels.size())
         return false;
 
-    for (SIZE_T i = 0; i < lhs.LevelsCount; ++i)
+    for (SIZE_T i = 0; i < lhslevels.size(); ++i)
     {
         if (i != 0)
         {
-            if (lhs.Levels[i].second != rhs.Levels[i].second)
+            if (lhslevels[i].second != rhslevels[i].second)
                 return false;
         }
         else
         {
-            if (lhs.Levels[i].first != rhs.Levels[i].first || lhs.Levels[i].second != rhs.Levels[i].second)
+            if (lhslevels[i].first != rhslevels[i].first || lhslevels[i].second != rhslevels[i].second)
                 return false;
         }
     }

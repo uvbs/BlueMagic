@@ -10,14 +10,16 @@
 namespace bluemagic
 {
 
-static std::vector<MEMORY_BASIC_INFORMATION> ScanMemoryRegions(HANDLE processHandle, std::vector<Module> processModules, SIZE_T moduleIndex, SIZE_T endModule)
+static std::vector<MEMORY_BASIC_INFORMATION> ScanMemoryRegions(HANDLE processHandle, std::vector<Module*> processModules, SIZE_T moduleIndex, SIZE_T endModule)
 {
     std::vector<MEMORY_BASIC_INFORMATION> regions;
 
     for (; moduleIndex < endModule; ++moduleIndex)
     {
-        UINT_PTR start = processModules[moduleIndex].BaseAddress;
-        UINT_PTR end = moduleIndex + 1 > processModules.size() - 1 ? processModules[moduleIndex].MemorySize + 1 : processModules[moduleIndex + 1].BaseAddress;
+        UINT_PTR start = processModules[moduleIndex]->GetBaseAddress();
+        UINT_PTR end = moduleIndex + 1 > processModules.size() - 1
+            ? processModules[moduleIndex]->GetMemorySize() + 1
+            : processModules[moduleIndex + 1]->GetBaseAddress();
         UINT_PTR seek = start;
 
         do
@@ -27,31 +29,32 @@ static std::vector<MEMORY_BASIC_INFORMATION> ScanMemoryRegions(HANDLE processHan
                 regions.push_back(region);
 
             seek = PointerToGeneric<UINT_PTR>(region.BaseAddress) + region.RegionSize;
-        } while (seek < end);
+        }
+        while (seek < end);
     }
 
     return regions;
 }
 
-static std::vector<MEMORY_BASIC_INFORMATION> ScanAllMemoryRegions(HANDLE processHandle, std::vector<Module> processModules)
+static std::vector<MEMORY_BASIC_INFORMATION> ScanAllMemoryRegions(HANDLE processHandle, std::vector<Module*> processModules)
 {
     return ScanMemoryRegions(processHandle, processModules, 0, processModules.size());
 }
 
-static std::vector<MEMORY_BASIC_INFORMATION> LoadMemoryRegions(Process* process, Module processModule)
+static std::vector<MEMORY_BASIC_INFORMATION> LoadMemoryRegions(Process* process, Module* processModule)
 {
-    std::vector<Module> processModules = process->Modules;
-    std::vector<Module>::iterator itr = std::find(processModules.begin(), processModules.end(), processModule);
+    std::vector<Module*> processModules = process->GetModules();
+    std::vector<Module*>::iterator itr = std::find(processModules.begin(), processModules.end(), processModule);
     if (itr == processModules.end())
         return std::vector<MEMORY_BASIC_INFORMATION>();
 
     SIZE_T index = std::distance(processModules.begin(), itr);
-    return ScanMemoryRegions(process->Handle, processModules, index, index + 1);
+    return ScanMemoryRegions(process->GetHandle(), processModules, index, index + 1);
 }
 
 static std::vector<MEMORY_BASIC_INFORMATION> LoadAllMemoryRegions(Process* process)
 {
-    return ScanAllMemoryRegions(process->Handle, process->Modules);
+    return ScanAllMemoryRegions(process->GetHandle(), process->GetModules());
 }
 
 }

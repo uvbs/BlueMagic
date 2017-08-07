@@ -4,7 +4,7 @@
 #include <bluemagic\pointer.h>
 #include <bluemagic\module.h>
 #include <bluemagic\process.h>
-#include <bluemagic\protect_operation.h>
+#include <bluemagic\protect_guard.h>
 #include <bluemagic\readwrite.h>
 #include <bluemagic\regions.h>
 #include <bluemagic\scanner.h>
@@ -27,7 +27,7 @@ int main()
             if (strcmp(p32.szExeFile, L"", true))
             {
                 p = new Process(p32);
-                ph = p->Handle;
+                ph = p->GetHandle();
                 break;
             }
         }

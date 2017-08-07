@@ -13,29 +13,88 @@ namespace bluemagic
 class Module
 {
 public:
-    Module() { }
-
-    Module(MODULEENTRY32 moduleEntry)
+    explicit Module() :
+        _name{ TSTR() }, _path{ TSTR() },
+        _handle{ nullptr }, _base_address{ 0 },
+        _memory_size{ 0 }, _process_id{ 0 }
     {
-        Name = moduleEntry.szModule;
-        Path = moduleEntry.szExePath;
-        Handle = moduleEntry.hModule;
-        BaseAddress = PointerToGeneric<UINT_PTR>(moduleEntry.modBaseAddr);
-        MemorySize = moduleEntry.modBaseSize;
-        ProcessId = moduleEntry.th32ProcessID;
     }
 
-    TSTR Name;
-    TSTR Path;
-    HMODULE Handle;
-    UINT_PTR BaseAddress;
-    DWORD MemorySize;
-    DWORD ProcessId;
+    explicit Module(MODULEENTRY32 moduleEntry) :
+        _name{moduleEntry.szModule}, _path{moduleEntry.szExePath},
+        _handle{moduleEntry.hModule}, _base_address{PointerToGeneric<UINT_PTR>(moduleEntry.modBaseAddr)},
+        _memory_size{moduleEntry.modBaseSize}, _process_id{moduleEntry.th32ProcessID}
+    {
+    }
+
+    Module(Module const& other) = delete;
+
+    Module& operator=(Module const& other) = delete;
+
+    Module(Module&& other)
+    {
+        _name = other._name;
+        _path = other._path;
+        _handle = std::move(other._handle);
+        _base_address = other._base_address;
+        _memory_size = other._memory_size;
+        _process_id = other._process_id;
+    }
+
+    Module& operator=(Module&& other)
+    {
+        _name = other._name;
+        _path = other._path;
+        _handle = std::move(other._handle);
+        _base_address = other._base_address;
+        _memory_size = other._memory_size;
+        _process_id = other._process_id;
+
+        return *this;
+    }
+
+    TSTR GetName() const
+    {
+        return _name;
+    }
+
+    TSTR GetPath() const
+    {
+        return _path;
+    }
+
+    HMODULE GetHandle() const
+    {
+        return _handle;
+    }
+
+    UINT_PTR GetBaseAddress() const
+    {
+        return _base_address;
+    }
+
+    DWORD GetMemorySize() const
+    {
+        return _memory_size;
+    }
+
+    DWORD GetParentProcessId() const
+    {
+        return _process_id;
+    }
+
+private:
+    TSTR _name;
+    TSTR _path;
+    HMODULE _handle;
+    UINT_PTR _base_address;
+    DWORD _memory_size;
+    DWORD _process_id;
 };
 
 inline bool operator==(const Module& lhs, const Module& rhs)
 {
-    return lhs.Name == rhs.Name && lhs.MemorySize == rhs.MemorySize;
+    return lhs.GetName() == rhs.GetName() && lhs.GetMemorySize() == rhs.GetMemorySize();
 }
 
 inline bool operator!=(const Module& lhs, const Module& rhs)

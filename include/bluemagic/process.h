@@ -14,47 +14,106 @@ namespace bluemagic
 class Process
 {
 public:
-    Process() { }
-
-    Process(PROCESSENTRY32 processEntry)
+    explicit Process() :
+        _name{ TSTR() }, _id{ 0 }, _handle{ nullptr },
+        _is64{ false }, _main_module{ nullptr }, _modules{ std::vector<Module*>() }
     {
-        Id = processEntry.th32ProcessID;
-        Handle = OpenProcessImpl(Id);
-        Is64 = false;
+    }
 
-        std::vector<MODULEENTRY32> moduleEntries = GetModulesFromProcessImpl(Id);
+    explicit Process(PROCESSENTRY32 processEntry) :
+        _name{ TSTR() }, _id{ processEntry.th32ProcessID }, _handle{ OpenProcessImpl(_id) },
+        _is64{ false }, _main_module{ nullptr }, _modules{ std::vector<Module*>() }
+    {
+        std::vector<MODULEENTRY32> moduleEntries = GetModulesFromProcessImpl(_id);
         for (MODULEENTRY32 me32 : moduleEntries)
         {
-            Module m = Module(me32);
+            Module* m = new Module(me32);
 
             if (strcmp(me32.szModule, processEntry.szExeFile, true))
-                MainModule = m;
+                _main_module = m;
 
-            Modules.push_back(m);
+            _modules.push_back(m);
 
-            if (m.BaseAddress >= 0x100000000)
-                Is64 = true;
+            if (m->GetBaseAddress() >= 0x100000000)
+                _is64 = true;
         }
 
-        Name = GetModuleBaseNameImpl(Handle, MainModule.Handle);
+        _name = GetModuleBaseNameImpl(_handle, _main_module->GetHandle());
+    }
+
+    Process(Process const& other) = delete;
+
+    Process& operator=(Process const& other) = delete;
+
+    Process(Process&& other)
+    {
+        _name = other._name;
+        _id = other._id;
+        _handle = std::move(other._handle);
+        _is64 = other._is64;
+        _main_module = other._main_module;
+        _modules = other._modules;
+    }
+
+    Process& operator=(Process&& other)
+    {
+        _name = other._name;
+        _id = other._id;
+        _handle = std::move(other._handle);
+        _is64 = other._is64;
+        _main_module = other._main_module;
+        _modules = other._modules;
+
+        return *this;
     }
 
     ~Process()
     {
-        CloseHandle(Handle);
+        CloseHandle(_handle);
     }
 
-    TSTR Name;
-    DWORD Id;
-    HANDLE Handle;
-    bool Is64;
-    Module MainModule;
-    std::vector<Module> Modules;
+    TSTR GetName() const
+    {
+        return _name;
+    }
+
+    DWORD GetId() const
+    {
+        return _id;
+    }
+
+    HANDLE GetHandle() const
+    {
+        return _handle;
+    }
+
+    bool Is64() const
+    {
+        return _is64;
+    }
+
+    Module* GetMainModule() const
+    {
+        return _main_module;
+    }
+
+    std::vector<Module*> GetModules() const
+    {
+        return _modules;
+    }
+
+private:
+    TSTR _name;
+    DWORD _id;
+    HANDLE _handle;
+    bool _is64;
+    Module* _main_module;
+    std::vector<Module*> _modules;
 };
 
 inline bool operator==(const Process& lhs, const Process& rhs)
 {
-    return lhs.Modules == rhs.Modules;
+    return lhs.GetModules() == rhs.GetModules();
 }
 
 inline bool operator!=(const Process& lhs, const Process& rhs)

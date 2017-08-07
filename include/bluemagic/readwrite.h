@@ -4,7 +4,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "protect_operation.h"
+#include "protect_guard.h"
 #include "pointer.h"
 #include "type_converter.h"
 #include "winapi_impl.h"
@@ -25,7 +25,7 @@ static T Read(HANDLE processHandle, UINT_PTR address)
 
 static bool Write(HANDLE processHandle, UINT_PTR address, std::vector<BYTE> bytes)
 {
-    ProtectOperation protect = ProtectOperation(processHandle, address, bytes.size());
+    ProtectGuard pg = ProtectGuard{ processHandle, address, bytes.size() };
     return WriteProcessMemoryImpl(processHandle, address, bytes) == bytes.size();
 }
 

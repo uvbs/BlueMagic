@@ -20,7 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\bluemagic\readwrite.h" />
-    <ClInclude Include="..\include\bluemagic\protect_operation.h" />
+    <ClInclude Include="..\include\bluemagic\protect_guard.h" />
     <ClInclude Include="..\include\bluemagic\regions.h" />
     <ClInclude Include="..\include\bluemagic\scanner.h" />
     <ClInclude Include="..\include\bluemagic\pointer.h" />
