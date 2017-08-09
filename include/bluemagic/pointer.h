@@ -30,7 +30,7 @@ public:
         return bluemagic::Read(_process_handle, GetAddress(), size);
     }
 
-    template <typename T, typename = std::enable_if_t<std::is_trivially_copyable_v<T>>>
+    template <class T, typename = std::enable_if_t<std::is_trivially_copyable_v<T> && !std::is_pointer_v<T>>>
     T Read() const
     {
         return bluemagic::Read<T>(_process_handle, GetAddress());
@@ -41,7 +41,7 @@ public:
         return bluemagic::Write(_process_handle, GetAddress(), bytes);
     }
 
-    template <typename T, typename = std::enable_if_t<std::is_trivially_copyable_v<T>>>
+    template <class T, typename = std::enable_if_t<std::is_trivially_copyable_v<T> && !std::is_pointer_v<T>>>
     bool Write(T value) const
     {
         return bluemagic::Write(ProcessHandle, GetAddress(), value);

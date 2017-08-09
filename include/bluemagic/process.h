@@ -25,18 +25,22 @@ public:
         _is64{ false }, _main_module{ nullptr }, _modules{ std::vector<Module*>() }
     {
         std::vector<MODULEENTRY32> moduleEntries = GetModulesFromProcessImpl(_id);
+        std::sort(std::begin(moduleEntries), std::end(moduleEntries),
+            [](const MODULEENTRY32& a, const MODULEENTRY32& b)
+            { return a.modBaseAddr < b.modBaseAddr; });
+
         for (MODULEENTRY32 me32 : moduleEntries)
         {
-            Module* m = new Module(me32);
+            Module* module = new Module(me32);
 
             if (strcmp(me32.szModule, processEntry.szExeFile, true))
-                _main_module = m;
+                _main_module = module;
 
-            _modules.push_back(m);
-
-            if (m->GetBaseAddress() >= 0x100000000)
-                _is64 = true;
+            _modules.push_back(module);
         }
+
+        if (_modules[_modules.size() - 1]->GetBaseAddress() > 0xFFFFFFFF)
+            _is64 = true;
 
         _name = GetModuleBaseNameImpl(_handle, _main_module->GetHandle());
     }

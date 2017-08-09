@@ -18,8 +18,8 @@ public:
 
     Signature(std::string signature) : _string{ signature }, _bytes{ std::vector<BYTE>() }
     {
-        _string.erase(std::remove_if(_string.begin(), _string.end(), ::isspace), _string.end());
-        std::transform(_string.begin(), _string.end(), _string.begin(), ::tolower);
+        _string.erase(std::remove_if(std::begin(_string), std::end(_string), ::isspace), std::end(_string));
+        std::transform(std::begin(_string), std::end(_string), std::begin(_string), ::tolower);
         if (_string.size() % 2 != 0)
             throw std::invalid_argument("Signature contains an invalid number of characters.");
 

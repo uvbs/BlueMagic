@@ -17,7 +17,7 @@ static std::vector<BYTE> Read(HANDLE processHandle, UINT_PTR address, SIZE_T siz
     return ReadProcessMemoryImpl(processHandle, address, size);;
 }
 
-template <typename T, typename = std::enable_if_t<std::is_trivially_copyable_v<T>>>
+template <class T, typename = std::enable_if_t<std::is_trivially_copyable_v<T> && !std::is_pointer_v<T>>>
 static T Read(HANDLE processHandle, UINT_PTR address)
 {
     return BytesToGeneric<T>(Read(processHandle, address, sizeof(T)));
@@ -29,7 +29,7 @@ static bool Write(HANDLE processHandle, UINT_PTR address, std::vector<BYTE> byte
     return WriteProcessMemoryImpl(processHandle, address, bytes) == bytes.size();
 }
 
-template <typename T, typename = std::enable_if_t<std::is_trivially_copyable_v<T>>>
+template <class T, typename = std::enable_if_t<std::is_trivially_copyable_v<T> && !std::is_pointer_v<T>>>
 static bool Write(HANDLE processHandle, UINT_PTR address, T value)
 {
     return Write(processHandle, address, GenericToBytes(value));

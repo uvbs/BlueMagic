@@ -39,8 +39,8 @@ inline BOOL strcmpA(const char* a, const char* b, bool ignorecase = false)
     {
         std::string sa(a);
         std::string sb(b);
-        std::transform(sa.begin(), sa.end(), sa.begin(), ::tolower);
-        std::transform(sb.begin(), sb.end(), sb.begin(), ::tolower);
+        std::transform(std::begin(sa), std::end(sa), std::begin(sa), ::tolower);
+        std::transform(std::begin(sb), std::end(sb), std::begin(sb), ::tolower);
         return !lstrcmpA(&sa[0], &sb[0]);
     }
 
@@ -53,8 +53,8 @@ inline BOOL strcmpW(const wchar_t* a, const wchar_t* b, bool ignorecase = false)
     {
         std::wstring wsa(a);
         std::wstring wsb(b);
-        std::transform(wsa.begin(), wsa.end(), wsa.begin(), ::tolower);
-        std::transform(wsb.begin(), wsb.end(), wsb.begin(), ::tolower);
+        std::transform(std::begin(wsa), std::end(wsa), std::begin(wsa), ::tolower);
+        std::transform(std::begin(wsb), std::end(wsb), std::begin(wsb), ::tolower);
         return !lstrcmpW(&wsa[0], &wsb[0]);
     }
 

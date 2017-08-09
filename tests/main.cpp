@@ -17,20 +17,19 @@ using namespace bluemagic;
 
 int main()
 {
-    try
+    auto GetProcessesByName = [](TSTR name)->std::vector<Process*>
     {
-        Process* p = nullptr;
-        HANDLE ph = nullptr;
+        std::vector<Process*> processes;
         std::vector<PROCESSENTRY32> ps32 = GetProcessesImpl();
         for (PROCESSENTRY32 p32 : ps32)
-        {
-            if (strcmp(p32.szExeFile, L"", true))
-            {
-                p = new Process(p32);
-                ph = p->GetHandle();
-                break;
-            }
-        }
+            if (strcmp(p32.szExeFile, &name[0], true))
+                processes.push_back(new Process(p32));
+        return processes;
+    };
+
+    try
+    {
+        Process* p = GetProcessesByName(L"")[0];
     }
     catch (std::exception ex)
     {

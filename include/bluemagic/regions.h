@@ -10,51 +10,36 @@
 namespace bluemagic
 {
 
-static std::vector<MEMORY_BASIC_INFORMATION> ScanMemoryRegions(HANDLE processHandle, std::vector<Module*> processModules, SIZE_T moduleIndex, SIZE_T endModule)
+static std::vector<MEMORY_BASIC_INFORMATION> LoadModuleRegions(HANDLE processHandle, Module* module)
 {
     std::vector<MEMORY_BASIC_INFORMATION> regions;
 
-    for (; moduleIndex < endModule; ++moduleIndex)
+    UINT_PTR start = module->GetBaseAddress();
+    UINT_PTR end = start + module->GetMemorySize();
+    UINT_PTR seek = start;
+
+    do
     {
-        UINT_PTR start = processModules[moduleIndex]->GetBaseAddress();
-        UINT_PTR end = moduleIndex + 1 > processModules.size() - 1
-            ? processModules[moduleIndex]->GetMemorySize() + 1
-            : processModules[moduleIndex + 1]->GetBaseAddress();
-        UINT_PTR seek = start;
+        MEMORY_BASIC_INFORMATION region = VirtualQueryExImpl(processHandle, seek, sizeof(MEMORY_BASIC_INFORMATION));
+        if ((region.State & MEM_COMMIT) &&
+            !(region.Protect & (PAGE_NOACCESS | PAGE_GUARD | PAGE_NOCACHE | PAGE_WRITECOMBINE | PAGE_TARGETS_INVALID)))
+            regions.push_back(region);
 
-        do
-        {
-            MEMORY_BASIC_INFORMATION region = VirtualQueryExImpl(processHandle, seek, sizeof(MEMORY_BASIC_INFORMATION));
-            if ((region.State & MEM_COMMIT) && !(region.Protect & 0x701))
-                regions.push_back(region);
-
-            seek = PointerToGeneric<UINT_PTR>(region.BaseAddress) + region.RegionSize;
-        }
-        while (seek < end);
+        seek = PointerToGeneric<UINT_PTR>(region.BaseAddress) + region.RegionSize;
     }
+    while (seek <= end);
 
     return regions;
 }
 
-static std::vector<MEMORY_BASIC_INFORMATION> ScanAllMemoryRegions(HANDLE processHandle, std::vector<Module*> processModules)
+static std::vector<MEMORY_BASIC_INFORMATION> LoadProcessRegions(Process* process)
 {
-    return ScanMemoryRegions(processHandle, processModules, 0, processModules.size());
-}
+    std::vector<MEMORY_BASIC_INFORMATION> regions;
+    for (Module* module : process->GetModules())
+        for (MEMORY_BASIC_INFORMATION region : LoadModuleRegions(process->GetHandle(), module))
+            regions.push_back(region);
 
-static std::vector<MEMORY_BASIC_INFORMATION> LoadMemoryRegions(Process* process, Module* processModule)
-{
-    std::vector<Module*> processModules = process->GetModules();
-    std::vector<Module*>::iterator itr = std::find(processModules.begin(), processModules.end(), processModule);
-    if (itr == processModules.end())
-        return std::vector<MEMORY_BASIC_INFORMATION>();
-
-    SIZE_T index = std::distance(processModules.begin(), itr);
-    return ScanMemoryRegions(process->GetHandle(), processModules, index, index + 1);
-}
-
-static std::vector<MEMORY_BASIC_INFORMATION> LoadAllMemoryRegions(Process* process)
-{
-    return ScanAllMemoryRegions(process->GetHandle(), process->GetModules());
+    return regions;
 }
 
 }

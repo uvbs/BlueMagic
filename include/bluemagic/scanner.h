@@ -13,7 +13,7 @@
 namespace bluemagic
 {
 
-static std::vector<UINT_PTR> ScanBufferForBytes(std::vector<BYTE> buffer, std::vector<BYTE> bytes)
+static std::vector<UINT_PTR> ScanBuffer(std::vector<BYTE> buffer, std::vector<BYTE> bytes)
 {
     std::vector<UINT_PTR> results;
     SIZE_T bs = bytes.size();
@@ -42,16 +42,16 @@ static std::vector<UINT_PTR> ScanBufferForBytes(std::vector<BYTE> buffer, std::v
     return results;
 }
 
-template <class T, typename = std::enable_if_t<std::is_trivially_copyable_v<T>>>
-static std::vector<UINT_PTR> ScanBufferForGeneric(std::vector<BYTE> buffer, T value)
+template <class T, typename = std::enable_if_t<std::is_trivially_copyable_v<T> && !std::is_pointer_v<T>>>
+static std::vector<UINT_PTR> ScanBuffer(std::vector<BYTE> buffer, T value)
 {
-    return ScanBufferForBytes(GenericToBytes(value), buffer);
+    return ScanBuffer(buffer, GenericToBytes(value));
 }
 
-static std::vector<UINT_PTR> ScanBufferForSignature(std::vector<BYTE> buffer, Signature signature)
+static std::vector<UINT_PTR> ScanBuffer(std::vector<BYTE> buffer, Signature signature)
 {
     if (!signature.ToBytes().empty())
-        return ScanBufferForBytes(buffer, signature.ToBytes());
+        return ScanBuffer(buffer, signature.ToBytes());
 
     std::vector<UINT_PTR> results;
     std::string ss = signature.ToString();
@@ -95,122 +95,100 @@ static std::vector<UINT_PTR> ScanBufferForSignature(std::vector<BYTE> buffer, Si
     return results;
 }
 
-static std::vector<UINT_PTR> ScanMemoryRegionForBytes(HANDLE processHandle, MEMORY_BASIC_INFORMATION region, std::vector<BYTE> bytes)
+static std::vector<UINT_PTR> ScanRegion(HANDLE processHandle, MEMORY_BASIC_INFORMATION region, std::vector<BYTE> bytes)
 {
     std::vector<UINT_PTR> results;
-    std::vector<UINT_PTR> addresses = ScanBufferForBytes(Read(processHandle, PointerToGeneric<UINT_PTR>(region.BaseAddress), region.RegionSize), bytes);
+    std::vector<UINT_PTR> addresses = ScanBuffer(Read(processHandle, PointerToGeneric<UINT_PTR>(region.BaseAddress), region.RegionSize), bytes);
     for (UINT_PTR address : addresses)
         results.push_back(PointerToGeneric<UINT_PTR>(region.BaseAddress) + address);
 
     return results;
 }
 
-template <class T, typename = std::enable_if_t<std::is_trivially_copyable_v<T>>>
-static std::vector<UINT_PTR> ScanMemoryRegionForGeneric(HANDLE processHandle, MEMORY_BASIC_INFORMATION region, T value)
+template <class T, typename = std::enable_if_t<std::is_trivially_copyable_v<T> && !std::is_pointer_v<T>>>
+static std::vector<UINT_PTR> ScanRegion(HANDLE processHandle, MEMORY_BASIC_INFORMATION region, T value)
 {
     std::vector<UINT_PTR> results;
-    std::vector<UINT_PTR> addresses = ScanBufferForGeneric(Read(processHandle, PointerToGeneric<UINT_PTR>(region.BaseAddress), region.RegionSize), value);
+    std::vector<UINT_PTR> addresses = ScanBuffer(Read(processHandle, PointerToGeneric<UINT_PTR>(region.BaseAddress), region.RegionSize), value);
     for (UINT_PTR address : addresses)
         results.push_back(PointerToGeneric<UINT_PTR>(region.BaseAddress) + address);
 
     return results;
 }
 
-static std::vector<UINT_PTR> ScanMemoryRegionForSignature(HANDLE processHandle, MEMORY_BASIC_INFORMATION region, Signature signature)
+static std::vector<UINT_PTR> ScanRegion(HANDLE processHandle, MEMORY_BASIC_INFORMATION region, Signature signature)
 {
     std::vector<UINT_PTR> results;
-    std::vector<UINT_PTR> addresses = ScanBufferForSignature(Read(processHandle, PointerToGeneric<UINT_PTR>(region.BaseAddress), region.RegionSize), signature);
+    std::vector<UINT_PTR> addresses = ScanBuffer(Read(processHandle, PointerToGeneric<UINT_PTR>(region.BaseAddress), region.RegionSize), signature);
     for (UINT_PTR address : addresses)
         results.push_back(PointerToGeneric<UINT_PTR>(region.BaseAddress) + address);
 
     return results;
 }
 
-static std::vector<UINT_PTR> ScanAllMemoryRegionsForBytes(HANDLE processHandle, std::vector<MEMORY_BASIC_INFORMATION> regions, std::vector<BYTE> bytes)
+static std::vector<UINT_PTR> ScanModule(Process* process, Module* module, std::vector<BYTE> bytes)
 {
     std::vector<UINT_PTR> results;
-    for (MEMORY_BASIC_INFORMATION region : regions)
-    {
-        std::vector<UINT_PTR> r = ScanMemoryRegionForBytes(processHandle, region, bytes);
-        results.insert(results.end(), r.begin(), r.end());
-    }
-
-    return results;
-}
-
-template <class T, typename = std::enable_if_t<std::is_trivially_copyable_v<T>>>
-static std::vector<UINT_PTR> ScanAllMemoryRegionsForGeneric(HANDLE processHandle, std::vector<MEMORY_BASIC_INFORMATION> regions, T value)
-{
-    std::vector<UINT_PTR> results;
-    for (MEMORY_BASIC_INFORMATION region : regions)
-    {
-        std::vector<UINT_PTR> r = ScanMemoryRegionForGeneric(processHandle, region, value);
-        results.insert(results.end(), r.begin(), r.end());
-    }
-
-    return results;
-}
-
-static std::vector<UINT_PTR> ScanAllMemoryRegionsForSignature(HANDLE processHandle, std::vector<MEMORY_BASIC_INFORMATION> regions, Signature signature)
-{
-    std::vector<UINT_PTR> results;
-    for (MEMORY_BASIC_INFORMATION region : regions)
-    {
-        std::vector<UINT_PTR> r = ScanMemoryRegionForSignature(processHandle, region, signature);
-        results.insert(results.end(), r.begin(), r.end());
-    }
-
-    return results;
-}
-
-static std::vector<UINT_PTR> ScanModuleForBytes(Process* process, HANDLE processHandle, Module* module, std::vector<BYTE> bytes)
-{
-    return ScanAllMemoryRegionsForBytes(processHandle, LoadMemoryRegions(process, module), bytes);
-}
-
-template <class T, typename = std::enable_if_t<std::is_trivially_copyable_v<T>>>
-static std::vector<UINT_PTR> ScanModuleForGeneric(Process* process, HANDLE processHandle, Module* module, T value)
-{
-    return ScanAllMemoryRegionsForGeneric(processHandle, LoadMemoryRegions(process, module), value);
-}
-
-static std::vector<UINT_PTR> ScanModuleForSignature(Process* process, HANDLE processHandle, Module* module, Signature signature)
-{
-    return ScanAllMemoryRegionsForSignature(processHandle, LoadMemoryRegions(process, module), signature);
-}
-
-static std::vector<UINT_PTR> ScanAllModulesForBytes(Process* process, HANDLE processHandle, std::vector<BYTE> bytes)
-{
-    std::vector<UINT_PTR> results;
-    for (Module* pm : process->GetModules())
-        for (UINT_PTR address : ScanModuleForBytes(process, processHandle, pm, bytes))
+    for (MEMORY_BASIC_INFORMATION region : LoadModuleRegions(process->GetHandle(), module))
+        for (UINT_PTR address : ScanRegion(process->GetHandle(), region, bytes))
             results.push_back(address);
 
     return results;
 }
 
-template <class T, typename = std::enable_if_t<std::is_trivially_copyable_v<T>>>
-static std::vector<UINT_PTR> ScanAllModulesForGeneric(Process* process, HANDLE processHandle, T value)
+template <class T, typename = std::enable_if_t<std::is_trivially_copyable_v<T> && !std::is_pointer_v<T>>>
+static std::vector<UINT_PTR> ScanModule(Process* process, Module* module, T value)
 {
     std::vector<UINT_PTR> results;
-    for (Module* pm : process->GetModules())
-        for (UINT_PTR address : ScanModuleForGeneric(process, processHandle, pm, value))
+    for (MEMORY_BASIC_INFORMATION region : LoadModuleRegions(process->GetHandle(), module))
+        for (UINT_PTR address : ScanRegion(process->GetHandle(), region, value))
             results.push_back(address);
 
     return results;
 }
 
-static std::vector<UINT_PTR> ScanAllModulesForSignature(Process* process, HANDLE processHandle, Signature signature)
+static std::vector<UINT_PTR> ScanModule(Process* process, Module* module, Signature signature)
 {
     std::vector<UINT_PTR> results;
-    for (Module* pm : process->GetModules())
-        for (UINT_PTR address : ScanModuleForSignature(process, processHandle, pm, signature))
+    for (MEMORY_BASIC_INFORMATION region : LoadModuleRegions(process->GetHandle(), module))
+        for (UINT_PTR address : ScanRegion(process->GetHandle(), region, signature))
             results.push_back(address);
 
     return results;
 }
 
-static UINT_PTR ScanAddressForBytes(HANDLE processHandle, UINT_PTR address, std::vector<BYTE> bytes)
+static std::vector<UINT_PTR> ScanProcess(Process* process, std::vector<BYTE> bytes)
+{
+    std::vector<UINT_PTR> results;
+    for (MEMORY_BASIC_INFORMATION region : LoadProcessRegions(process))
+        for (UINT_PTR address : ScanRegion(process->GetHandle(), region, bytes))
+            results.push_back(address);
+
+    return results;
+}
+
+template <class T, typename = std::enable_if_t<std::is_trivially_copyable_v<T> && !std::is_pointer_v<T>>>
+static std::vector<UINT_PTR> ScanProcess(Process* process, T value)
+{
+    std::vector<UINT_PTR> results;
+    for (MEMORY_BASIC_INFORMATION region : LoadProcessRegions(process))
+        for (UINT_PTR address : ScanRegion(process->GetHandle(), region, value))
+            results.push_back(address);
+
+    return results;
+}
+
+static std::vector<UINT_PTR> ScanProcess(Process* process, Signature signature)
+{
+    std::vector<UINT_PTR> results;
+    for (MEMORY_BASIC_INFORMATION region : LoadProcessRegions(process))
+        for (UINT_PTR address : ScanRegion(process->GetHandle(), region, signature))
+            results.push_back(address);
+
+    return results;
+}
+
+static UINT_PTR ScanAddress(HANDLE processHandle, UINT_PTR address, std::vector<BYTE> bytes)
 {
     if (Read(processHandle, address, bytes.size()) == bytes)
         return address;
@@ -218,16 +196,16 @@ static UINT_PTR ScanAddressForBytes(HANDLE processHandle, UINT_PTR address, std:
     return 0;
 }
 
-template <class T, typename = std::enable_if_t<std::is_trivially_copyable_v<T>>>
-static UINT_PTR ScanAddressForGeneric(HANDLE processHandle, UINT_PTR address, T value)
+template <class T, typename = std::enable_if_t<std::is_trivially_copyable_v<T> && !std::is_pointer_v<T>>>
+static UINT_PTR ScanAddress(HANDLE processHandle, UINT_PTR address, T value)
 {
-    return ScanAddressForBytes(processHandle, address, GenericToBytes(value));
+    return ScanAddress(processHandle, address, GenericToBytes(value));
 }
 
-static UINT_PTR ScanAddressForSignature(HANDLE processHandle, UINT_PTR address, Signature signature)
+static UINT_PTR ScanAddress(HANDLE processHandle, UINT_PTR address, Signature signature)
 {
     if (!signature.ToBytes().empty())
-        return ScanAddressForBytes(processHandle, address, signature.ToBytes());
+        return ScanAddress(processHandle, address, signature.ToBytes());
 
     std::string ss = signature.ToString();
     SIZE_T sss = ss.size();
@@ -255,12 +233,12 @@ static UINT_PTR ScanAddressForSignature(HANDLE processHandle, UINT_PTR address, 
     return address;
 }
 
-static std::vector<UINT_PTR> ScanAddressesForBytes(HANDLE processHandle, std::vector<BYTE> bytes, std::vector<UINT_PTR> addresses)
+static std::vector<UINT_PTR> ScanAddresses(HANDLE processHandle, std::vector<BYTE> bytes, std::vector<UINT_PTR> addresses)
 {
     std::vector<UINT_PTR> results;
     for (UINT_PTR address : addresses)
     {
-        UINT_PTR result = ScanAddressForBytes(processHandle, address, bytes);
+        UINT_PTR result = ScanAddress(processHandle, address, bytes);
         if (result != 0)
             results.push_back(result);
     }
@@ -268,13 +246,13 @@ static std::vector<UINT_PTR> ScanAddressesForBytes(HANDLE processHandle, std::ve
     return results;
 }
 
-template <class T, typename = std::enable_if_t<std::is_trivially_copyable_v<T>>>
-static std::vector<UINT_PTR> ScanAddressesForGeneric(HANDLE processHandle, T value, std::vector<UINT_PTR> addresses)
+template <class T, typename = std::enable_if_t<std::is_trivially_copyable_v<T> && !std::is_pointer_v<T>>>
+static std::vector<UINT_PTR> ScanAddresses(HANDLE processHandle, T value, std::vector<UINT_PTR> addresses)
 {
     std::vector<UINT_PTR> results;
     for (UINT_PTR address : addresses)
     {
-        UINT_PTR result = ScanAddressForGeneric(processHandle, address, value);
+        UINT_PTR result = ScanAddress(processHandle, address, value);
         if (result != 0)
             results.push_back(result);
     }
@@ -282,12 +260,12 @@ static std::vector<UINT_PTR> ScanAddressesForGeneric(HANDLE processHandle, T val
     return results;
 }
 
-static std::vector<UINT_PTR> ScanAddressesForSignature(HANDLE processHandle, Signature signature, std::vector<UINT_PTR> addresses)
+static std::vector<UINT_PTR> ScanAddresses(HANDLE processHandle, Signature signature, std::vector<UINT_PTR> addresses)
 {
     std::vector<UINT_PTR> results;
     for (UINT_PTR address : addresses)
     {
-        UINT_PTR result = ScanAddressForSignature(processHandle, address, signature);
+        UINT_PTR result = ScanAddress(processHandle, address, signature);
         if (result != 0)
             results.push_back(result);
     }
